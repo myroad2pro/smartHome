@@ -85,7 +85,7 @@ public class ControlPointGUI extends javax.swing.JFrame {
         STextField = new javax.swing.JTextField();
         DTextField = new javax.swing.JTextField();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE);
         setTitle("ControlPoint");
         setResizable(false);
 
