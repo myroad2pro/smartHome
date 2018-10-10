@@ -11,6 +11,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
 import java.net.URI;
@@ -155,44 +156,44 @@ public class ControlPoint extends ControlPointGUI implements Runnable {
 
 		// add system tray icon
 		if (!SystemTray.isSupported()) {
-	        System.out.println("SystemTray is not supported");
-	        return;
-	    }
-	    Image image = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/on-switch.png").getPath());
-	    
-	    final PopupMenu popup = new PopupMenu();
-	    final TrayIcon trayIcon = new TrayIcon(image, "Control Point");
-	    trayIcon.setImageAutoSize(true);
-	    final SystemTray tray = SystemTray.getSystemTray();
+			System.out.println("SystemTray is not supported");
+			return;
+		}
+		Image image = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/on-switch.png").getPath());
 
-	    MenuItem exitItem = new MenuItem("Exit");
-	    exitItem.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent e) {
-	        	tray.remove(trayIcon);
-	            System.exit(0);
-	        }
-	    });
+		final PopupMenu popup = new PopupMenu();
+		final TrayIcon trayIcon = new TrayIcon(image, "Control Point");
+		trayIcon.setImageAutoSize(true);
+		final SystemTray tray = SystemTray.getSystemTray();
 
-	    popup.add(exitItem);
-	    trayIcon.setPopupMenu(popup);
+		MenuItem exitItem = new MenuItem("Exit");
+		exitItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				tray.remove(trayIcon);
+				System.exit(0);
+			}
+		});
 
-	    try {
-	        tray.add(trayIcon);
-	    } catch (AWTException e) {
-	        System.out.println("TrayIcon could not be added.");
-	    }
-		
-	    trayIcon.addMouseListener(new MouseAdapter() {
+		popup.add(exitItem);
+		trayIcon.setPopupMenu(popup);
 
-	        @Override
-	        public void mousePressed(MouseEvent e) {
+		try {
+			tray.add(trayIcon);
+		} catch (AWTException e) {
+			System.out.println("TrayIcon could not be added.");
+		}
 
-	        if (e.getClickCount() == 2) {
-	            setVisible(true);
-	           }
-	        }
-	    });
-	    
+		trayIcon.addMouseListener(new MouseAdapter() {
+
+			@Override
+			public void mousePressed(MouseEvent e) {
+
+				if (e.getClickCount() == 2) {
+					setVisible(true);
+				}
+			}
+		});
+
 		deviceBox.addActionListener(new java.awt.event.ActionListener() {
 			@Override
 			public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -797,21 +798,96 @@ public class ControlPoint extends ControlPointGUI implements Runnable {
 	public void run() {
 		try {
 			// Resource<List<Map<String, Object>>> resource;
-			try {
-//				List<Map<String, Object>> listMap2 = (List<Map<String, Object>>) upnpService.getRegistry()
-//						.getResource(new URI("listMap")).getModel();
-//				for (Map map : listMap2) {
-//					listMap.add(map.get(""));
-//				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			Runtime.getRuntime().addShutdownHook(new Thread() {
+				@Override
+				public void run() {
+					try {
+						File file = new File(getClass().getClassLoader().getResource("data/data.txt").getFile());
+						FileOutputStream fis = new FileOutputStream(file);
+						OutputStreamWriter isr = new OutputStreamWriter(fis);
+						BufferedWriter br = new BufferedWriter(isr);
+
+						for (Map map1 : listMap) {
+							br.write("Scenario " + map1.hashCode());
+							br.newLine();
+							br.write("sDeviceType" + "=" + map1.get("sDeviceType"));
+							br.newLine();
+							br.write("sServiceType" + "=" + map1.get("sServiceType"));
+							br.newLine();
+							br.write("sStateVariable" + "=" + map1.get("sStateVariable"));
+							br.newLine();
+							br.write("sValue" + "=" + map1.get("sValue"));
+							br.newLine();
+							br.write("dDeviceType" + "=" + map1.get("dDeviceType"));
+							br.newLine();
+							br.write("dServiceType" + "=" + map1.get("dServiceType"));
+							br.newLine();
+							br.write("dStateVariable" + "=" + map1.get("dStateVariable"));
+							br.newLine();
+							br.write("dValue" + "=" + map1.get("dValue"));
+							br.newLine();
+						}
+						br.close();
+
+						System.out.println("Writing to file " + file.getAbsolutePath() + "\nClosing...");
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					// upnpService.shutdown();
+				}
+			});
 
 			// Add a listener for device registration events
 			upnpService.getRegistry().addListener(createRegistryListener(upnpService));
 			// Broadcast a search message for all devices
 			upnpService.getControlPoint().search(new STAllHeader());
 
+			// read scenario from file
+			File file = new File(getClass().getClassLoader().getResource("data/data.txt").getFile());
+			FileInputStream fis = new FileInputStream(file);
+			InputStreamReader isr = new InputStreamReader(fis);
+			BufferedReader br = new BufferedReader(isr);
+
+			String line;
+			String text = "";
+			while ((line = br.readLine()) != null) {
+				// process the line
+				if (line.startsWith("Scenario")) {
+					Map<String, Object> map = new HashMap<String, Object>();
+//			    	listArea.setText("IF (" + br.readLine(););
+					line = br.readLine();
+					map.put("sDeviceType", line.substring(line.indexOf('=') + 1));
+					line = br.readLine();
+					map.put("sServiceType", line.substring(line.indexOf('=') + 1));
+					line = br.readLine();
+					map.put("sStateVariable", line.substring(line.indexOf('=') + 1));
+					line = br.readLine();
+					if(line.substring(line.indexOf('=') + 1).equals("true") || line.substring(line.indexOf('=') + 1).equals("false")) {
+						map.put("sValue", Boolean.parseBoolean(line.substring(line.indexOf('=') + 1)));
+					}else {
+						map.put("sValue", Integer.parseInt((line.substring(line.indexOf('=') + 1))));
+					}
+					line = br.readLine();
+					map.put("dDeviceType", line.substring(line.indexOf('=') + 1));
+					line = br.readLine();
+					map.put("dServiceType", line.substring(line.indexOf('=') + 1));
+					line = br.readLine();
+					map.put("dStateVariable", line.substring(line.indexOf('=') + 1));
+					line = br.readLine();
+					if(line.substring(line.indexOf('=') + 1).equals("true") || line.substring(line.indexOf('=') + 1).equals("false")) {
+						map.put("dValue", Boolean.parseBoolean(line.substring(line.indexOf('=') + 1)));
+					}else {
+						map.put("dValue", Integer.parseInt((line.substring(line.indexOf('=') + 1))));
+					}
+					listMap.add(map);
+					text += "IF (" + map.get("sDeviceType") + "," + map.get("sServiceType") + ","
+							+ map.get("sStateVariable") + "==" + map.get("sValue") + ") THEN (" + map.get("dDeviceType")
+							+ "," + map.get("dServiceType") + "," + map.get("dStateVariable") + "==" + map.get("dValue")
+							+ ")\n";
+					listArea.setText(text + "\n");
+				}
+			}
+			br.close();
 		} catch (Exception ex) {
 			System.err.println("Exception occured: " + ex);
 			System.exit(1);
@@ -1047,6 +1123,6 @@ class CallAction extends ActionInvocation {
 			System.err.println(ex.getMessage());
 			System.exit(1);
 		}
-		
+
 	}
 }

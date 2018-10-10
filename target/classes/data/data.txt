@@ -1,0 +1,18 @@
+Scenario -1314712272
+sDeviceType=Phone
+sServiceType=Renraku
+sStateVariable=Status
+sValue=true
+dDeviceType=SpeakerType
+dServiceType=Chousei
+dStateVariable=Power
+dValue=true
+Scenario -1314712256
+sDeviceType=Phone
+sServiceType=Renraku
+sStateVariable=Status
+sValue=false
+dDeviceType=SpeakerType
+dServiceType=Chousei
+dStateVariable=Power
+dValue=false
